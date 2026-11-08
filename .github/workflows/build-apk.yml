@@ -1,0 +1,44 @@
+name: Build Football Live APK
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - 'FootballLive_1_0.zip'
+      - '.github/workflows/build-apk.yml'
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Extract project
+        run: |
+          mkdir -p source
+          unzip -q FootballLive_1_0.zip -d source
+          PROJECT_DIR=$(find source -name settings.gradle -o -name settings.gradle.kts | head -1 | xargs dirname)
+          echo "PROJECT_DIR=$PROJECT_DIR" >> $GITHUB_ENV
+          test -n "$PROJECT_DIR"
+
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.9'
+
+      - name: Build APK
+        run: gradle -p "$PROJECT_DIR" assembleDebug
+
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: FootballLive-APK
+          path: source/**/build/outputs/apk/debug/*.apk
